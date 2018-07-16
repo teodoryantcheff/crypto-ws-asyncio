@@ -41,18 +41,18 @@ class BitMEX(CryptoExchange):
         }
         await self._ws.send(json.dumps(request))
 
-    def on_message(self, json_payload):
+    async def on_message(self, json_payload):
         try:
             updates = json_payload['data']
             for ticker_msg in updates:
                 market = self._market_names_map[ticker_msg['symbol']]
-                self.on_ticker(market, ticker_msg)
+                await self.on_ticker(market, ticker_msg)
         except:
             pass
 
-    def on_ticker(self, market, data):
+    async def on_ticker(self, market, data):
         timestamp = CryptoExchange.iso8601_to_ts(data['timestamp'])
-        self.update_ticker(
+        await self.update_ticker(
             market,
             best_bid=float(data['bidPrice']),
             bid_size=float(data['bidSize']),

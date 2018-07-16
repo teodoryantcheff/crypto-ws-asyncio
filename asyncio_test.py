@@ -2,6 +2,7 @@
 
 import asyncio
 import random
+import warnings
 
 from arbi import TickerObserver
 from bitfinex import BitFinex
@@ -10,6 +11,7 @@ from binance import Binance
 from bitmex import BitMEX
 
 from counters import rates_monitor
+from wsserver import srv
 
 # TODO :
 # kraken
@@ -18,20 +20,22 @@ from counters import rates_monitor
 # - bitfinex
 # - binance
 
-obs = TickerObserver()
+obs = None
+# obs = TickerObserver()
 
 Exchanges = [
-    # BitFinex(ticker_observer=obs, markets=BitFinex.all_markets),
-    # BitMEX(ticker_observer=obs, markets=BitMEX.all_markets),
-    BitMEX(ticker_observer=obs, markets=['btc_usd', 'eth_btc', 'ltc_btc']),
-    BitFinex(ticker_observer=obs, markets=['btc_usd', 'eth_btc', 'btc_eur', 'eth_usd']),
+#    BitFinex(ticker_observer=obs, markets=BitFinex.all_markets),
+#    BitMEX(ticker_observer=obs, markets=BitMEX.all_markets),
+    # BitMEX(ticker_observer=obs, markets=['btc_usd', 'eth_btc', 'ltc_btc']),
+    # BitFinex(ticker_observer=obs, markets=['btc_usd', 'eth_btc', 'btc_eur', 'eth_usd']),
 
-    GDAX(ticker_observer=obs, markets=['btc_usd', 'btc_eur', 'eth_eur', 'eth_usd', 'eth_btc']),
+    # GDAX(ticker_observer=obs, markets=['btc_usd', 'btc_eur', 'eth_eur', 'eth_usd', 'eth_btc']),
 
-    # GDAX(ticker_observer=obs, markets=GDAX.all_markets),
-    # Binance(ticker_observer=obs, markets=Binance.all_markets),
+#   GDAX(ticker_observer=obs, markets=GDAX.all_markets),
+    # GDAX(ticker_observer=obs, markets=['btc_usd']),
+    Binance(ticker_observer=obs, markets=Binance.all_markets),
 
-    Binance(ticker_observer=obs, markets=['eth_btc', 'ltc_btc', ]),
+    # Binance(ticker_observer=obs, markets=['eth_btc', 'ltc_btc', ]),
 
     # Binance(markets=['eth_btc', ])#, 'bnb_btc', 'eos_btc']),
     # BitMEX(markets=['btc_usd'], ticker_observer=obs)#, 'ada_btc', 'bch_btc', 'xrp_btc', 'btc_usd', 'eth_btc', 'ltc_btc']),
@@ -55,9 +59,12 @@ async def closer():
 def main():
     # logging.basicConfig(level=logging.DEBUG)
     loop = asyncio.get_event_loop()
-    # loop.set_debug(True)
+    loop.set_debug(True)
+    warnings.simplefilter('always', ResourceWarning)
+    # loop.slow_callback_duration = 0.001
+
     try:
-        run_all = [exchange.run() for exchange in Exchanges] + [rates_monitor()]  # + [closer()]
+        run_all = [exchange.run() for exchange in Exchanges] + [srv.run()] + [rates_monitor()]  # + [closer()]
         asyncio.gather(*run_all)
         loop.run_forever()
     except KeyboardInterrupt:

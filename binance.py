@@ -63,14 +63,15 @@ class Binance(CryptoExchange):
         # implemented here to silence the NotImplemented
         pass
 
-    def on_message(self, json_payload):
+    async def on_message(self, json_payload):
+        # print('< ', json_payload)
         if json_payload['e'] == '24hrTicker':
-            self.on_ticker(json_payload)
+            market = self._market_names_map[json_payload['s']]
+            await self.on_ticker(market, json_payload)
 
-    def on_ticker(self, data):
-        symbol = self._market_names_map[data['s']]
-        self.update_ticker(
-            symbol,
+    async def on_ticker(self, market, data):
+        await self.update_ticker(
+            market,
             best_bid=float(data['b']),
             bid_size=float(data['B']),
             best_ask=float(data['a']),

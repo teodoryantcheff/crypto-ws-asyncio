@@ -22,7 +22,8 @@ class GDAX(CryptoExchange):
         }
         await self._ws.send(json.dumps(request))
 
-    def on_message(self, json_payload):
+    async def on_message(self, json_payload):
+        # print('< ', json_payload)
         msg_type = json_payload['type']
         try:
             market = self._market_names_map[json_payload['product_id']]
@@ -34,7 +35,7 @@ class GDAX(CryptoExchange):
             elif msg_type == 'heartbeat':
                 self.on_heartbeat(market, json_payload)
             elif msg_type == 'ticker':
-                self.on_ticker(market, json_payload)
+                await self.on_ticker(market, json_payload)
         except Exception as e:
             pass
 
@@ -69,14 +70,24 @@ class GDAX(CryptoExchange):
             except ValueError:
                 book.insert([p, q])
 
-    def on_ticker(self, market, data):
-        self.update_ticker(
+    async def on_ticker(self, market, data):
+        await self.update_ticker(
             market,
             best_bid=float(data['best_bid']),
             best_ask=float(data['best_ask']),
             last_price=float(data['price']),
             volume=float(data['volume_24h']),
         )
+
+        # print('{:10s} {}: {}'.format(
+        #     self.__class__.__name__, market,
+        #     'b {bid_size:>{widht}.{prec}f} @ {best_bid:<{widht}.{prec}f} '
+        #     'a {ask_size:>{widht}.{prec}f} @ {best_ask:<{widht}.{prec}f} {ts}'.format(widht=15, prec=4, ts=0,
+        #                                                                               bid_size=0,
+        #                                                                               ask_size=0,
+        #                                                                               best_bid=float(data['best_bid']),
+        #                                                                               best_ask=float(data['best_ask']))))
+
 
     @classmethod
     def denormalize_market_name(cls, market_name):

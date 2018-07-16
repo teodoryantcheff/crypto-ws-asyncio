@@ -7,6 +7,8 @@ from mock_import import mock_import
 with mock_import():
     from peregrinearb import bellman_ford_multi, calculate_profit_ratio_for_path
 
+# from peregrinearb import bellman_ford_multi, calculate_profit_ratio_for_path
+
 
 def print_profit_opportunity_for_path_multi(graph: nx.Graph, path, print_output=True, round_to=None, shorten=False):
     """
@@ -57,7 +59,7 @@ class TickerObserver(object):
         for path in paths:
             total = calculate_profit_ratio_for_path(graph, path)
             total_p = (total - 1) * 100.0
-            if True: #total_p > 0:
+            if total_p > 0:
                 # print(total, path)
                 print('{:5.3}%'.format(total_p), ' -> '.join([p for p in path]))
                 print_profit_opportunity_for_path_multi(graph, path)

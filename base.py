@@ -5,6 +5,7 @@ from datetime import datetime
 import dateutil.parser as dp
 
 from arbi import TickerObserver
+from wsserver import srv
 
 try:
     import ujson as json
@@ -75,8 +76,8 @@ class CryptoExchange(object):
 
     # def update_orderbook(self, symbol, bids, asks):
 
-    def update_ticker(self, market, best_bid, best_ask, bid_size=0, ask_size=0, last_price=None, volume=None,
-                      timestamp=None):
+    async def update_ticker(self, market, best_bid, best_ask, bid_size=0, ask_size=0, last_price=None, volume=None,
+                            timestamp=None):
         # todo add more data from ccxt's dict, like so
         # return {
         #     'symbol': symbol,
@@ -114,6 +115,11 @@ class CryptoExchange(object):
             'timestamp': timestamp,
         }
 
+        await srv.send_all(json.dumps({
+                'exchange': self.__class__.__name__,
+                'market': market,
+                **self.ticker[market]
+            }))
         # print(f'\n\n\n\n\n\n=== {ts} ========================================================================')
 
         # print('{:10s} {}: {}'.format(
@@ -129,7 +135,7 @@ class CryptoExchange(object):
         if self.observer:
             self.observer.notify()
 
-    def on_ticker(self, market: str, data):
+    async def on_ticker(self, market: str, data):
         # Called on ticker messages
         raise NotImplemented('Can only be called on a subclass')
 
@@ -143,11 +149,11 @@ class CryptoExchange(object):
         # Called on heasrtbeat messages
         raise NotImplemented('Can only be called on a subclass')
 
-    def on_message(self, json_payload):
+    async def on_message(self, json_payload):
         # Called on successfully json.loads()ed message
         raise NotImplemented('Can only be called on a subclass')
 
-    def on_recv(self, data):
+    async def on_recv(self, data):
         c.tick(self.__class__.__name__)
 
         # Called on any messages from the websocket
@@ -162,7 +168,7 @@ class CryptoExchange(object):
             raise
             # logger.error(f"Error JSON decoding payload '{data}'")
 
-        self.on_message(msg)
+        await self.on_message(msg)
 
     async def connect(self, custom_url=None):
         url = custom_url or self.url
@@ -177,7 +183,7 @@ class CryptoExchange(object):
         try:
             while True:
                 data = await self._ws.recv()
-                self.on_recv(data)
+                await self.on_recv(data)
         except websockets.ConnectionClosed as exc:
             print(f' !!! Connection to {self.__class__.__name__} closed: code:{exc.code} reason:"{exc.reason}"')
             asyncio.ensure_future(self.run())

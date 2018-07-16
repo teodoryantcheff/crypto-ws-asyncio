@@ -90,8 +90,9 @@ class BitFinex(CryptoExchange):
     def on_orderbook_l2update(self, market: str, book_update: list):
         self._update_books(market, book_update)
 
-    def on_message(self, json_payload):
+    async def on_message(self, json_payload):
         try:
+            # print('< ', json_payload)
             chan_id, data = int(json_payload[0]), json_payload[1]
             market = self._market_names_map[self.mapping[chan_id]]
 
@@ -102,7 +103,7 @@ class BitFinex(CryptoExchange):
                 if len(data) == 3:
                     self.on_orderbook_l2update(market, data)
                 elif len(data) == 10:
-                    self.on_ticker(market, data)
+                    await self.on_ticker(market, data)
                 else:
                     self.on_orderbook_snapshot(market, data)
         except KeyError:  # json_payload is really a dict, not a list
@@ -113,8 +114,8 @@ class BitFinex(CryptoExchange):
 
         # todo ? info messages
 
-    def on_ticker(self, market, data):
-        self.update_ticker(
+    async def on_ticker(self, market, data):
+        await self.update_ticker(
             market=market,
             best_bid=float(data[0]),
             bid_size=float(data[1]),
